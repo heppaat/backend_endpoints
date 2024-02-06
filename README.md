@@ -17,3 +17,5 @@
 3. npm run start
 4. rm -Force .git
 5. git init...
+
+https://stackoverflow.blog/2020/03/02/best-practices-for-rest-api-design/

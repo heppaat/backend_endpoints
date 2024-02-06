@@ -4,6 +4,8 @@ import filesystem from "fs/promises";
 
 const server = express();
 
+//header has content type (application json), express knows that the body has to be parsed as json
+//json formatum erkezik, megcsinalja  a bodyt objecktkent
 server.use(express.json());
 
 const QueryParamSchema = z.object({
