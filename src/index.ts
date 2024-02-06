@@ -1,11 +1,15 @@
 import express from "express";
 import { z } from "zod";
 import filesystem from "fs/promises";
+import cors from "cors";
 
 const server = express();
 
+//if you need cors (cross origin resource sharing)
+server.use(cors());
+
 //header has content type (application json), express knows that the body has to be parsed as json
-//json formatum erkezik, megcsinalja  a bodyt objecktkent
+//json formatum erkezik, megcsinalja a bodyt objecktkent
 server.use(express.json());
 
 const QueryParamSchema = z.object({
@@ -27,12 +31,16 @@ const CreateCountrySchema = z.object({
 });
 
 const readFile = async () => {
-  const data = await filesystem.readFile(
-    `${__dirname}/../database.json`,
-    "utf-8"
-  );
-  const countries: Country[] = JSON.parse(data);
-  return countries;
+  try {
+    const data = await filesystem.readFile(
+      `${__dirname}/../database.json`,
+      "utf-8"
+    );
+    const countries: Country[] = JSON.parse(data);
+    return countries;
+  } catch (error) {
+    return null;
+  }
 };
 
 server.get("/api/countries", async (req, res) => {
@@ -41,7 +49,8 @@ server.get("/api/countries", async (req, res) => {
   if (!result.success) return res.status(400).json(result.error.issues);
 
   const countries = await readFile();
-
+  //if there is no file, wrong database, syntax error in database
+  if (!countries) return res.sendStatus(500);
   const queryParams = result.data;
 
   const filteredCountries = countries.filter(
@@ -50,9 +59,7 @@ server.get("/api/countries", async (req, res) => {
       country.population < queryParams.max
   );
 
-  res.json({
-    data: filteredCountries,
-  });
+  res.json(filteredCountries);
 });
 
 server.post("/api/countries", async (req, res) => {
@@ -61,6 +68,7 @@ server.post("/api/countries", async (req, res) => {
   if (!result.success) return res.status(400).json(result.error.issues);
 
   const countries = await readFile();
+  if (!countries) return res.sendStatus(500);
   const randomNumber = Math.random();
   const newCountry = { ...result.data, id: randomNumber };
 
@@ -78,6 +86,7 @@ server.delete("/api/countries/:id", async (req, res) => {
   const id = +req.params.id;
 
   const countries = await readFile();
+  if (!countries) return res.sendStatus(500);
 
   const filteredCountries = countries.filter((country) => country.id !== id);
 
@@ -92,6 +101,7 @@ server.delete("/api/countries/:id", async (req, res) => {
 server.patch("/api/countries/:id", async (req, res) => {
   const id = +req.params.id;
   const countries = await readFile();
+  if (!countries) return res.sendStatus(500);
 
   let countryToChange = countries.find((country) => country.id === id);
 
